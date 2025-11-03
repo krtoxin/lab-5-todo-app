@@ -1,5 +1,7 @@
+import { useCallback, useMemo } from "react";
 import AddTodoForm from "./AddTodoForm";
 import TodoItem from "./TodoItem";
+import SearchBar from "./SearchBar";
 import styles from "../styles/TodoList.module.css";
 import { useTodos } from "../hooks/useTodos";
 
@@ -25,18 +27,23 @@ export default function TodoList() {
 
   const totalPages = Math.max(1, Math.ceil((totalTodos || 0) / (limitPerPage || 1)));
 
+  const handleSearchChange = useCallback((e) => setSearchTerm(e.target.value), [setSearchTerm]);
+
+  const handleLimitChange = useCallback((e) => setLimit(e.target.value), [setLimit]);
+
+  const todoItems = useMemo(() => {
+    return todos.map((todo) => ({
+      id: todo.id,
+      task: todo.todo || todo.task,
+      completed: todo.completed,
+      loading: mutatingId === todo.id,
+    }));
+  }, [todos, mutatingId]);
+
   return (
     <div className={styles.wrapper}>
       <AddTodoForm onAddTodo={addTodo} />
-      <div className={styles.topbar}>
-        <input
-          className={styles.search}
-          placeholder="Search todos..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          aria-label="Search todos"
-        />
-      </div>
+      <SearchBar value={searchTerm} onChange={handleSearchChange} />
       {isLoading && (
         <div className={styles.empty}>
           <span className={styles.emptyText}>Loading...</span>
@@ -53,15 +60,15 @@ export default function TodoList() {
         </div>
       ) : (
         <ul className={styles.list}>
-          {todos.map((todo) => (
+          {todoItems.map((item) => (
             <TodoItem
-              key={todo.id}
-              task={todo.todo || todo.task}
-              completed={todo.completed}
-              onToggle={() => toggleTodo(todo.id)}
-              onDelete={() => deleteTodo(todo.id)}
-              loading={mutatingId === todo.id}
-              onEdit={(newTitle) => editTodoTitle(todo.id, newTitle)}
+              key={item.id}
+              task={item.task}
+              completed={item.completed}
+              onToggle={() => toggleTodo(item.id)}
+              onDelete={() => deleteTodo(item.id)}
+              loading={item.loading}
+              onEdit={(newTitle) => editTodoTitle(item.id, newTitle)}
             />
           ))}
         </ul>
@@ -94,7 +101,7 @@ export default function TodoList() {
             <select
               className={styles.limitSelect}
               value={limitPerPage}
-              onChange={(e) => setLimit(e.target.value)}
+              onChange={handleLimitChange}
             >
               <option value={5}>5</option>
               <option value={10}>10</option>

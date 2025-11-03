@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import TodoList from "./components/TodoList";
 import styles from "./styles/App.module.css";
+import TodoList from "./components/TodoList";
 
 const queryClient = new QueryClient();
 

@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import axios from "axios";
 
 const TODOS_URL = "https://dummyjson.com/todos";
@@ -31,7 +31,7 @@ export function useTodos() {
     return list.filter((t) => (t.todo || t.task || "").toLowerCase().includes(q));
   }, [data, searchTerm]);
 
-  const addTodo = (text) => {
+  const addTodo = useCallback((text) => {
     const pageKey = ["todos", { limit: limitPerPage, skip }];
     const newTodo = {
       id: Date.now(),
@@ -45,7 +45,7 @@ export function useTodos() {
       return updated.slice(0, limitPerPage);
     });
     setTotalTodos((t) => (typeof t === "number" ? t + 1 : 1));
-  };
+  }, [limitPerPage, skip, queryClient]);
 
   const toggleMutation = useMutation({
     mutationFn: ({ id, completed }) => axios.put(`${TODOS_URL}/${id}`, { completed }),
@@ -66,7 +66,7 @@ export function useTodos() {
     },
   });
 
-  const toggleTodo = (id) => {
+  const toggleTodo = useCallback((id) => {
     const pageKey = ["todos", { limit: limitPerPage, skip }];
     const current = queryClient.getQueryData(pageKey) || [];
     const todo = current.find((t) => t.id === id);
@@ -79,7 +79,7 @@ export function useTodos() {
     }
     setMutatingId(id);
     toggleMutation.mutate({ id, completed: !todo.completed });
-  };
+  }, [limitPerPage, skip, queryClient, toggleMutation]);
 
   const deleteMutation = useMutation({
     mutationFn: (id) => axios.delete(`${TODOS_URL}/${id}`),
@@ -100,7 +100,7 @@ export function useTodos() {
     },
   });
 
-  const deleteTodo = (id) => {
+  const deleteTodo = useCallback((id) => {
     const pageKey = ["todos", { limit: limitPerPage, skip }];
     const current = queryClient.getQueryData(pageKey) || [];
     const todo = current.find((t) => t.id === id);
@@ -111,7 +111,7 @@ export function useTodos() {
     }
     setMutatingId(id);
     deleteMutation.mutate(id);
-  };
+  }, [limitPerPage, skip, queryClient, deleteMutation]);
 
   const editMutation = useMutation({
     mutationFn: ({ id, newTitle }) => axios.put(`${TODOS_URL}/${id}`, { todo: newTitle }),
@@ -132,7 +132,7 @@ export function useTodos() {
     },
   });
 
-  const editTodoTitle = (id, newTitle) => {
+  const editTodoTitle = useCallback((id, newTitle) => {
     if (!newTitle || !newTitle.trim()) return;
     const trimmed = newTitle.trim();
     const pageKey = ["todos", { limit: limitPerPage, skip }];
@@ -146,23 +146,23 @@ export function useTodos() {
       return;
     }
     editMutation.mutate({ id, newTitle: trimmed });
-  };
+  }, [limitPerPage, skip, queryClient, editMutation]);
 
-  const goToNextPage = () => {
+  const goToNextPage = useCallback(() => {
     const nextSkip = currentPage * limitPerPage;
     const hasMore = nextSkip < totalTodos;
     if (hasMore) setCurrentPage((p) => p + 1);
-  };
+  }, [currentPage, limitPerPage, totalTodos]);
 
-  const goToPrevPage = () => {
+  const goToPrevPage = useCallback(() => {
     if (currentPage > 1) setCurrentPage((p) => p - 1);
-  };
+  }, [currentPage]);
 
-  const setLimit = (limit) => {
+  const setLimit = useCallback((limit) => {
     const parsed = Number(limit) || 10;
     setLimitPerPage(parsed);
     setCurrentPage(1);
-  };
+  }, []);
 
   return {
     todos: filteredTodos,

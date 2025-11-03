@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState, useCallback } from "react";
 import styles from "../styles/TodoItem.module.css";
 
-export default function TodoItem({ task, completed, onToggle, onDelete, onEdit, loading }) {
+const TodoItem = memo(function TodoItem({ task, completed, onToggle, onDelete, onEdit, loading }) {
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState(task || "");
   const inputRef = useRef(null);
@@ -17,7 +17,7 @@ export default function TodoItem({ task, completed, onToggle, onDelete, onEdit, 
     setDraft(task || "");
   }, [task]);
 
-  const handleSave = () => {
+  const handleSave = useCallback(() => {
     const next = draft.trim();
     if (!next || next === task) {
       setIsEditing(false);
@@ -25,15 +25,19 @@ export default function TodoItem({ task, completed, onToggle, onDelete, onEdit, 
     }
     onEdit(next);
     setIsEditing(false);
-  };
+  }, [draft, task, onEdit]);
 
-  const handleKeyDown = (e) => {
+  const handleKeyDown = useCallback((e) => {
     if (e.key === "Enter") handleSave();
     if (e.key === "Escape") {
       setDraft(task || "");
       setIsEditing(false);
     }
-  };
+  }, [handleSave, task]);
+
+  const handleDraftChange = useCallback((e) => setDraft(e.target.value), []);
+
+  const handleEditClick = useCallback(() => setIsEditing(true), []);
 
   return (
     <li className={`${styles.item} ${completed ? styles.completed : ""}`}>
@@ -53,7 +57,7 @@ export default function TodoItem({ task, completed, onToggle, onDelete, onEdit, 
             ref={inputRef}
             className={styles.editInput}
             value={draft}
-            onChange={(e) => setDraft(e.target.value)}
+            onChange={handleDraftChange}
             onKeyDown={handleKeyDown}
             onBlur={handleSave}
             aria-label="Edit todo title"
@@ -70,7 +74,7 @@ export default function TodoItem({ task, completed, onToggle, onDelete, onEdit, 
         <>
           <button
             className={styles.edit}
-            onClick={() => setIsEditing(true)}
+            onClick={handleEditClick}
             aria-label="Edit"
             disabled={loading}
           >
@@ -88,4 +92,6 @@ export default function TodoItem({ task, completed, onToggle, onDelete, onEdit, 
       )}
     </li>
   );
-}
+});
+
+export default TodoItem;
